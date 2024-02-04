@@ -1,5 +1,4 @@
-from typing import Optional
-from typing import Union
+from typing import Optional, List, Union
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
@@ -81,4 +80,34 @@ async def read_items(q: Union[str, None] = Query(
     if q:
         results.update({"q": q})
     return results
-
+# ...代表required
+@app.get("/items/required")
+async def read_items_required(q: str = Query(default=..., min_length=3)):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+# 表示必須輸入值, 即便值為 None null
+@app.get("/items/required/none")
+async def read_items_required(q: Union[str, None] = Query(default=..., min_length=3)):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+# 查詢多個值
+@app.get("/items/multi")
+# q:Union[List[str], None] = Query(default=['foo', 'bar'])
+# or
+# q:list = Query(default=['foo', 'bar']) 該寫法不會檢查傳入型別
+# title, description 文件註解
+# deprecated 標註已棄用
+# alias 別名參數
+async def read_items_multi(
+        q:Union[List[str], None] = Query(
+        default=['foo', 'bar'],
+        alias="item-query",
+        title="Query string",
+        description="Query string for the items to search in the database that have a good match",
+        min_length=3)):
+    query_items = {"q": q}
+    return query_items
