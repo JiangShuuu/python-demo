@@ -1,6 +1,7 @@
 from typing import Optional
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
+from pydantic import BaseModel
 
 app = FastAPI() # 建立一個 Fast API application
 
@@ -40,3 +41,44 @@ def optional_example(user_name:str, gender: Union[str, None]):
 @app.get("/optional_optional")
 def optional_example(user_name:str, gender: Optional[str]):
     return {"user_name": user_name, "gender": gender}
+
+# baseModel
+# https://fastapi.tiangolo.com/zh/tutorial/body/
+
+class Item(BaseModel):
+    name: str
+    descirption: str | None = None
+    price: float
+    tax: float | None = None
+
+@app.post('/items/')
+async def create_item(item: Item):
+    item_dict = item.dict()
+    if item.tax:
+        price_with_tax = item.price + item.tax
+        item_dict.update({'price_with_tax': price_with_tax})
+    return item_dict
+
+# **dict 繼承 class 設定格式, 並展平
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item, q: str | None = None):
+    result = {"item_id": item_id, **item.dict()}
+    if (q):
+        result.update({"q": q})
+    return {
+        "success": True,
+        "result": result
+    }
+
+# search params & validate
+# https://fastapi.tiangolo.com/zh/tutorial/query-params-str-validations/
+@app.get("/items/")
+# 可加入正規表達式作為驗證工具之一
+async def read_items(q: Union[str, None] = Query(
+    default=None, min_length=3,  max_length=50, pattern="^fixedquery$"
+    )):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
