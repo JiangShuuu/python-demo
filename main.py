@@ -1,5 +1,5 @@
-from typing import Optional, List, Union
-from fastapi import FastAPI, Query
+from typing import Optional, List, Union, Annotated
+from fastapi import FastAPI, Query, Path
 from pydantic import BaseModel
 
 app = FastAPI() # 建立一個 Fast API application
@@ -46,9 +46,9 @@ def optional_example(user_name:str, gender: Optional[str]):
 
 class Item(BaseModel):
     name: str
-    descirption: str | None = None
+    descirption: Optional[str] = None
     price: float
-    tax: float | None = None
+    tax: Optional[float] = None
 
 @app.post('/items/')
 async def create_item(item: Item):
@@ -60,7 +60,7 @@ async def create_item(item: Item):
 
 # **dict 繼承 class 設定格式, 並展平
 @app.put("/items/{item_id}")
-async def update_item(item_id: int, item: Item, q: str | None = None):
+async def update_item(item_id: int, item: Item, q: Optional[str] = None):
     result = {"item_id": item_id, **item.dict()}
     if (q):
         result.update({"q": q})
@@ -111,3 +111,16 @@ async def read_items_multi(
         min_length=3)):
     query_items = {"q": q}
     return query_items
+
+
+# Annotated & Path params & value valite
+# https://fastapi.tiangolo.com/zh/tutorial/path-params-numeric-validations/#__tabbed_1_2
+@app.get("/items/path/{item_id}")
+async def read_items(
+    item_id: Annotated[int, Path(title="The ID of the item to get")],
+    q: Annotated[Union[str, None], Query(alias="item-query")] = None,  
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
